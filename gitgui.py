@@ -62,6 +62,8 @@ class GitGui:
         self.merge_source_dropdown.grid(row=5, column=0)
         self.merge_target_dropdown.grid(row=5, column=1)
         self.merge_button.grid(row=5, column=2)
+        self.branch_label = tk.Label(master, text="")
+        self.branch_label.grid(row=7, column=0)
     def select_folder(self):
 
         folder = filedialog.askdirectory()
@@ -87,7 +89,7 @@ class GitGui:
             self.update_commit_option()
         except InvalidGitRepositoryError as e:
             messagebox.showinfo('Error', f'Invalid git repository: {folder}')
-    
+        self.branch_label["text"] = f'Current Branch: {self.current_branch}'    
     def commit_changes(self, auto=False):
         self.git.add('-A')
 
@@ -129,15 +131,16 @@ class GitGui:
     def checkout(self):
         commit = self.commit_option.get() or self.commit_hash.get()
         try:
-            self.update_commit_option()
             self.git.checkout(commit)
+            self.update_commit_option()  # update calling checkout to ensure it has the latest
             messagebox.showinfo('Info', f'Checkout to commit: {commit} successful')
         except GitCommandError as e:
             messagebox.showinfo('Error', f'Checkout failed: {str(e)}')
     def update_commit_option(self):
 
         try:
-            #self.current_branch = self.repo.active_branch.name
+            
+            self.current_branch = self.repo.active_branch.name
             self.commit_option['values'] = [commit.hexsha for commit in self.repo.iter_commits(self.current_branch, max_count=None)]
         except Exception as e:
             messagebox.showinfo('Error', 'Error updating commit option: ' + str(e))
@@ -155,6 +158,7 @@ class GitGui:
         self.merge_target_var.set(self.branches[0])
         self.merge_source_dropdown['values'] = self.branches
         self.merge_target_dropdown['values'] = self.branches
+        self.branch_label["text"] = f'Current Branch: {self.current_branch}'
     def auto_commit(self, *args):
         if self.auto_commit_var.get():
             self.commit_changes(auto=True)  # commit changes if any exists
@@ -169,7 +173,7 @@ class GitGui:
     def select_branch(self, event):
         self.git.checkout(self.branch_var.get())
         self.update_commit_option()
-
+        self.branch_label["text"] = f'Current Branch: {self.current_branch}'
     def merge(self):
         source_branch = self.merge_source_var.get()
         target_branch = self.merge_target_var.get()
